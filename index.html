@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Invoice Pro - Unlimited JSON</title>
+    <title>Invoice Pro v1.0.2</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
@@ -21,8 +21,9 @@
         <!-- HEADER -->
         <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 p-4 md:p-6 mb-4 md:mb-8">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 class="text-2xl font-black tracking-tighter text-slate-800">DOCUMENT<span class="text-blue-600">HUB</span></h1>
+                <div class="flex flex-col">
+                    <h1 class="text-2xl font-black tracking-tighter text-slate-800 leading-none">DOCUMENT<span class="text-blue-600">HUB</span></h1>
+                    <span class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Build v{{ appVersion }}</span>
                 </div>
                 <nav class="flex bg-slate-100 rounded-xl p-1 overflow-x-auto no-scrollbar">
                     <button v-for="(label, key) in tabs" @click="tab = key" 
@@ -147,12 +148,12 @@
                                     <span>Без знижки:</span>
                                     <span>{{ subtotal.toFixed(2) }} грн</span>
                                 </div>
-                                <div class="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">РАЗОМ ДО СПЛАТИ</div>
+                                <div class="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest text-slate-400">РАЗОМ ДО СПЛАТИ</div>
                                 <div class="text-4xl font-black text-slate-800 tracking-tighter">{{ totalSum.toFixed(2) }} <span class="text-sm font-normal text-slate-400 uppercase">грн</span></div>
                             </div>
 
                             <button @click="generatePDF" :disabled="!invoice.client.name || invoice.items.length === 0" 
-                                    class="w-full mt-2 bg-blue-600 disabled:bg-slate-200 text-white py-4 rounded-2xl font-black shadow-xl shadow-blue-100 active:scale-95 transition-all text-lg">
+                                    class="w-full mt-2 bg-blue-600 disabled:bg-slate-200 text-white py-4 rounded-2xl font-black shadow-xl shadow-blue-100 active:scale-95 transition-all text-lg tracking-tight">
                                 ЗГЕНЕРУВАТИ PDF
                             </button>
                         </div>
@@ -163,7 +164,7 @@
             <!-- ТОВАРНИЙ ДОВІДНИК -->
             <div v-if="tab === 'products'" class="bg-white p-4 md:p-8 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold">Лист позицій</h2>
+                    <h2 class="text-xl font-bold">Довідник товарів</h2>
                     <button @click="openProductModal()" class="bg-blue-600 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-50">+ Додати</button>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -219,7 +220,10 @@
 
                 <div class="bg-slate-900 p-6 rounded-2xl text-white shadow-xl">
                     <h3 class="font-bold mb-2">Робота з базою (JSON)</h3>
-                    <p class="text-slate-400 text-[10px] mb-6 tracking-widest uppercase">Системний час: {{ new Date(updatedAt).toLocaleString() }}</p>
+                    <div class="text-slate-400 text-[10px] mb-6 flex justify-between uppercase tracking-widest">
+                        <span>Оновлено: {{ new Date(updatedAt).toLocaleString() }}</span>
+                        <span>App v{{ appVersion }}</span>
+                    </div>
                     <div class="grid grid-cols-2 gap-3">
                         <button @click="exportJSON" class="bg-white/10 hover:bg-white/20 p-3 rounded-xl text-xs font-bold transition-all">СКАЧАТИ JSON</button>
                         <label class="bg-blue-600 hover:bg-blue-500 p-3 rounded-xl text-xs font-bold cursor-pointer text-center transition-all">
@@ -271,6 +275,7 @@
         createApp({
             data() {
                 return {
+                    appVersion: '1.0.2',
                     tab: 'invoice',
                     tabs: { invoice: '🧾 Накладна', products: '📦 Товари', clients: '👥 Клієнти', settings: '⚙️ Опції' },
                     updatedAt: Date.now(),
@@ -311,7 +316,13 @@
             methods: {
                 saveData(showAlert = false) {
                     this.updatedAt = Date.now();
-                    const db = { settings: this.settings, products: this.products, clients: this.clients, updatedAt: this.updatedAt };
+                    const db = { 
+                        appVersion: this.appVersion,
+                        settings: this.settings, 
+                        products: this.products, 
+                        clients: this.clients, 
+                        updatedAt: this.updatedAt 
+                    };
                     localStorage.setItem('invoice_pro_db_v4', JSON.stringify(db));
                     if(showAlert) alert('Збережено!');
                 },
@@ -421,7 +432,7 @@
                     const blob = new Blob([data], { type: 'application/json' });
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(blob);
-                    a.download = `backup_invoice_${new Date().toLocaleDateString()}.json`;
+                    a.download = `backup_v${this.appVersion}_${new Date().toLocaleDateString()}.json`;
                     a.click();
                 },
                 importJSON(e) {
@@ -429,7 +440,8 @@
                     reader.onload = (ev) => {
                         try {
                             const inc = JSON.parse(ev.target.result);
-                            if (confirm('Ви впевнені, що хочете ЗАМІНИТИ всі поточні дані даними з цього файлу?')) {
+                            const fileVer = inc.appVersion || 'невідома';
+                            if (confirm(`Файл версії ${fileVer}. ЗАМІНИТИ всі поточні дані?`)) {
                                 Object.assign(this.$data, inc);
                                 this.saveData();
                                 location.reload();
