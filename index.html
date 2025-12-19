@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Invoice Pro v1.0.2</title>
+    <title>Invoice Pro v1.0.3</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
@@ -13,6 +13,7 @@
         .modal-overlay { background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); }
         .tab-button { transition: all 0.2s ease; }
         input, select, textarea { font-size: 16px !important; } 
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-900">
@@ -23,7 +24,7 @@
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex flex-col">
                     <h1 class="text-2xl font-black tracking-tighter text-slate-800 leading-none">DOCUMENT<span class="text-blue-600">HUB</span></h1>
-                    <span class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Build v{{ appVersion }}</span>
+                    <span class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Build v{{ appVersion }} (Offline Mode)</span>
                 </div>
                 <nav class="flex bg-slate-100 rounded-xl p-1 overflow-x-auto no-scrollbar">
                     <button v-for="(label, key) in tabs" @click="tab = key" 
@@ -127,7 +128,7 @@
                                 <option value="">-- Обрати клієнта --</option>
                                 <option v-for="c in clients" :key="c.id" :value="c.id">{{c.name}}</option>
                             </select>
-                            <input v-model="invoice.client.name" placeholder="Назва Одержувача *" class="w-full border-slate-200 border rounded-xl p-3 text-sm">
+                            <input v-model="invoice.client.name" placeholder="Назва Одержувача *" class="w-full border-slate-200 border rounded-xl p-3 text-sm font-bold">
                             <textarea v-model="invoice.client.address" placeholder="Адреса" class="w-full border-slate-200 border rounded-xl p-3 text-sm h-16"></textarea>
                             <input v-model="invoice.client.edrpou" placeholder="ЄДРПОУ" class="w-full border-slate-200 border rounded-xl p-3 text-sm">
                             <input v-model="invoice.client.phoneNumber" placeholder="Телефон" class="w-full border-slate-200 border rounded-xl p-3 text-sm">
@@ -148,7 +149,7 @@
                                     <span>Без знижки:</span>
                                     <span>{{ subtotal.toFixed(2) }} грн</span>
                                 </div>
-                                <div class="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest text-slate-400">РАЗОМ ДО СПЛАТИ</div>
+                                <div class="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">РАЗОМ ДО СПЛАТИ</div>
                                 <div class="text-4xl font-black text-slate-800 tracking-tighter">{{ totalSum.toFixed(2) }} <span class="text-sm font-normal text-slate-400 uppercase">грн</span></div>
                             </div>
 
@@ -202,7 +203,7 @@
                 </div>
             </div>
 
-            <!-- НАЛАШТУВАННЯ ПОСТАЧАЛЬНИКА -->
+            <!-- НАЛАШТУВАННЯ ТА СИНХРОНІЗАЦІЯ -->
             <div v-if="tab === 'settings'" class="max-w-xl mx-auto space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <h2 class="text-lg font-bold mb-4 uppercase tracking-widest text-slate-400">Реквізити Постачальника</h2>
@@ -218,29 +219,47 @@
                     </div>
                 </div>
 
-                <div class="bg-slate-900 p-6 rounded-2xl text-white shadow-xl">
-                    <h3 class="font-bold mb-2">Робота з базою (JSON)</h3>
-                    <div class="text-slate-400 text-[10px] mb-6 flex justify-between uppercase tracking-widest">
-                        <span>Оновлено: {{ new Date(updatedAt).toLocaleString() }}</span>
-                        <span>App v{{ appVersion }}</span>
+                <!-- БЛОК СИНХРОНІЗАЦІЇ -->
+                <div class="bg-slate-900 p-6 rounded-3xl text-white shadow-xl">
+                    <h3 class="font-bold mb-4 uppercase text-xs tracking-widest text-slate-400 italic">Синхронізація (Cloudless Sync)</h3>
+                    
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-1 gap-2">
+                            <button @click="copyToClipboard" class="bg-white/10 hover:bg-white/20 p-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2">
+                                📋 Копіювати всю базу (текст)
+                            </button>
+                            <button @click="pasteFromClipboard" class="bg-blue-600 hover:bg-blue-500 p-4 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2">
+                                📥 Вставити базу з буфера
+                            </button>
+                        </div>
+                        
+                        <div class="text-center py-2">
+                            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">або файлом</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <button @click="exportJSON" class="bg-slate-800 hover:bg-slate-700 p-3 rounded-xl text-xs font-bold transition-all border border-slate-700">Скачати JSON</button>
+                            <label class="bg-slate-800 hover:bg-slate-700 p-3 rounded-xl text-xs font-bold cursor-pointer text-center transition-all border border-slate-700">
+                                Залити JSON
+                                <input type="file" @change="importJSON" class="hidden" accept=".json">
+                            </label>
+                        </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <button @click="exportJSON" class="bg-white/10 hover:bg-white/20 p-3 rounded-xl text-xs font-bold transition-all">СКАЧАТИ JSON</button>
-                        <label class="bg-blue-600 hover:bg-blue-500 p-3 rounded-xl text-xs font-bold cursor-pointer text-center transition-all">
-                            ЗАЛИТИ JSON
-                            <input type="file" @change="importJSON" class="hidden" accept=".json">
-                        </label>
+
+                    <div class="mt-6 flex justify-between items-center opacity-40 text-[9px] font-mono tracking-tighter">
+                        <span>DATABASE ID: {{ updatedAt }}</span>
+                        <span>BUILD {{ appVersion }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- МОДАЛЬНІ ВІКНА -->
+        <!-- МОДАЛКИ -->
         <div v-if="modals.product || modals.client" class="fixed inset-0 z-50 modal-overlay flex items-end md:items-center justify-center p-0 md:p-4">
             <div class="bg-white rounded-t-3xl md:rounded-3xl p-6 md:p-8 w-full max-w-md shadow-2xl">
                 <div v-if="modals.product">
                     <h3 class="text-lg font-bold mb-4">{{ currentItem.id ? 'Редагувати товар' : 'Новий товар' }}</h3>
-                    <input v-model="currentItem.name" placeholder="Назва товару" class="w-full border p-3 rounded-xl mb-3 text-sm font-bold">
+                    <input v-model="currentItem.name" placeholder="Найменування товару" class="w-full border p-3 rounded-xl mb-3 text-sm font-bold">
                     <div class="grid grid-cols-2 gap-3 mb-6">
                         <input v-model.number="currentItem.price" placeholder="Ціна" class="border p-3 rounded-xl text-sm font-bold">
                         <input v-model="currentItem.unit" placeholder="Од. вим" class="border p-3 rounded-xl text-sm">
@@ -275,7 +294,7 @@
         createApp({
             data() {
                 return {
-                    appVersion: '1.0.2',
+                    appVersion: '1.0.3',
                     tab: 'invoice',
                     tabs: { invoice: '🧾 Накладна', products: '📦 Товари', clients: '👥 Клієнти', settings: '⚙️ Опції' },
                     updatedAt: Date.now(),
@@ -326,6 +345,37 @@
                     localStorage.setItem('invoice_pro_db_v4', JSON.stringify(db));
                     if(showAlert) alert('Збережено!');
                 },
+                
+                // CLIPBOARD SYNC
+                async copyToClipboard() {
+                    this.saveData();
+                    const data = localStorage.getItem('invoice_pro_db_v4');
+                    try {
+                        await navigator.clipboard.writeText(data);
+                        alert('Усю базу скопійовано в буфер обміну! Тепер вставте її в Telegram/Нотатки на іншому пристрої.');
+                    } catch (err) {
+                        alert('Помилка копіювання. Спробуйте через Експорт файлу.');
+                    }
+                },
+                async pasteFromClipboard() {
+                    try {
+                        const text = await navigator.clipboard.readText();
+                        const data = JSON.parse(text);
+                        if (data.settings && data.products) {
+                            if (confirm('Дані розпізнано! ЗАМІНИТИ вашу поточну базу цими новими даними?')) {
+                                Object.assign(this.$data, data);
+                                this.saveData();
+                                location.reload();
+                            }
+                        } else {
+                            throw new Error();
+                        }
+                    } catch (err) {
+                        alert('В буфері обміну немає правильних даних бази. Скопіюйте базу на іншому пристрої та спробуйте ще раз.');
+                    }
+                },
+
+                // CRUD
                 openProductModal(item = null) {
                     this.currentItem = item ? { ...item } : { name: '', price: 0, unit: 'шт' };
                     this.modals.product = true;
@@ -440,8 +490,7 @@
                     reader.onload = (ev) => {
                         try {
                             const inc = JSON.parse(ev.target.result);
-                            const fileVer = inc.appVersion || 'невідома';
-                            if (confirm(`Файл версії ${fileVer}. ЗАМІНИТИ всі поточні дані?`)) {
+                            if (confirm(`Замінити вашу поточну базу даними з файлу?`)) {
                                 Object.assign(this.$data, inc);
                                 this.saveData();
                                 location.reload();
