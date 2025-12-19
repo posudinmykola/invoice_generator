@@ -2,8 +2,8 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invoice Pro Mobile-First</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Invoice Pro - Discount & Format</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
@@ -11,14 +11,14 @@
     <style>
         [v-cloak] { display: none; }
         .modal-overlay { background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); }
-        /* Плавный переход для мобильного меню */
         .tab-button { transition: all 0.2s ease; }
+        input, select, textarea { font-size: 16px !important; } /* Запобігає зуму в Safari */
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-900">
     <div id="app" v-cloak class="max-w-5xl mx-auto pb-20">
         
-        <!-- HEADER (Sticky on mobile) -->
+        <!-- HEADER -->
         <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 p-4 md:p-6 mb-4 md:mb-8">
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -39,16 +39,15 @@
             <div v-if="tab === 'invoice'" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 <div class="lg:col-span-2 space-y-4">
-                    <!-- СЕКЦИЯ ТОВАРОВ (Адаптивная) -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                             <h2 class="font-bold text-slate-700">Склад замовлення</h2>
-                            <button @click="addItemRow" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold active:scale-95 transition-transform">
+                            <button @click="addItemRow" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold active:scale-95 transition-transform shadow-lg shadow-blue-100">
                                 + Додати товар
                             </button>
                         </div>
 
-                        <!-- ДЕСКТОПНЫЙ ВИД (Таблица) -->
+                        <!-- ДЕСКТОПНИЙ ВИД -->
                         <div class="hidden md:block overflow-x-auto">
                             <table class="w-full text-sm">
                                 <thead class="bg-slate-50 text-slate-500 border-b">
@@ -68,8 +67,8 @@
                                                 <option v-for="p in products" :value="p.id">{{p.name}}</option>
                                             </select>
                                         </td>
-                                        <td class="p-3"><input type="number" v-model.number="item.qty" class="w-full text-center bg-slate-50 rounded-lg p-2 border-none focus:ring-1 focus:ring-blue-500"></td>
-                                        <td class="p-3"><input type="number" v-model.number="item.price" class="w-full text-right bg-slate-50 rounded-lg p-2 border-none focus:ring-1 focus:ring-blue-500"></td>
+                                        <td class="p-3"><input type="number" v-model.number="item.qty" class="w-full text-center bg-slate-50 rounded-lg p-2 border-none"></td>
+                                        <td class="p-3"><input type="number" v-model.number="item.price" class="w-full text-right bg-slate-50 rounded-lg p-2 border-none"></td>
                                         <td class="p-3 text-right font-bold text-slate-800">{{ (item.qty * item.price).toFixed(2) }}</td>
                                         <td class="p-3 text-center">
                                             <button @click="invoice.items.splice(idx,1)" class="text-slate-300 hover:text-red-500 text-xl">×</button>
@@ -79,49 +78,35 @@
                             </table>
                         </div>
 
-                        <!-- МОБИЛЬНЫЙ ВИД (Карточки) -->
+                        <!-- МОБІЛЬНИЙ ВИД -->
                         <div class="md:hidden divide-y divide-slate-100">
                             <div v-for="(item, idx) in invoice.items" :key="idx" class="p-4 space-y-3 relative">
-                                <!-- Кнопка удаления для мобилки -->
-                                <button @click="invoice.items.splice(idx,1)" class="absolute top-2 right-2 w-8 h-8 flex items-center justify-center text-slate-300 bg-slate-50 rounded-full">×</button>
-                                
-                                <!-- Название на всю ширину -->
+                                <button @click="invoice.items.splice(idx,1)" class="absolute top-2 right-2 w-8 h-8 flex items-center justify-center text-slate-300">×</button>
                                 <div>
                                     <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Товар</label>
-                                    <select v-model="item.productId" @change="updateItemRow(idx)" class="w-full mt-1 border border-slate-200 rounded-xl p-3 text-sm font-bold bg-white focus:ring-2 focus:ring-blue-500 appearance-none">
+                                    <select v-model="item.productId" @change="updateItemRow(idx)" class="w-full mt-1 border border-slate-200 rounded-xl p-3 text-sm font-bold bg-white appearance-none">
                                         <option value="">-- Оберіть товар --</option>
                                         <option v-for="p in products" :value="p.id">{{p.name}}</option>
                                     </select>
                                 </div>
-
-                                <!-- Ряд: Кол-во и Цена -->
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase">К-сть</label>
+                                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Кількість</label>
                                         <input type="number" v-model.number="item.qty" class="w-full mt-1 border border-slate-200 rounded-xl p-3 text-sm text-center font-bold">
                                     </div>
                                     <div>
-                                        <label class="text-[10px] font-bold text-slate-400 uppercase">Ціна (грн)</label>
+                                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Ціна (грн)</label>
                                         <input type="number" v-model.number="item.price" class="w-full mt-1 border border-slate-200 rounded-xl p-3 text-sm text-right font-bold">
                                     </div>
-                                </div>
-
-                                <!-- Итоговая строка позиции -->
-                                <div class="flex justify-between items-center pt-2 border-t border-dashed border-slate-100">
-                                    <span class="text-xs text-slate-400 italic">Разом по позиції:</span>
-                                    <span class="text-base font-black text-blue-600">{{ (item.qty * item.price).toFixed(2) }} грн</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div v-if="invoice.items.length === 0" class="p-12 text-center">
-                            <div class="text-4xl mb-2 text-slate-200">📦</div>
-                            <div class="text-slate-400 text-sm italic">Список порожній. Додайте перший товар.</div>
-                        </div>
+                        <div v-if="invoice.items.length === 0" class="p-12 text-center text-slate-400 text-sm italic">Список порожній...</div>
                     </div>
                 </div>
 
-                <!-- БОКОВАЯ ПАНЕЛЬ -->
+                <!-- БОКОВА ПАНЕЛЬ -->
                 <div class="space-y-4">
                     <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                         <div class="grid grid-cols-2 gap-3 mb-4">
@@ -136,13 +121,11 @@
                         </div>
                         
                         <div class="space-y-3">
-                            <div>
-                                <label class="text-[10px] font-black text-slate-400 uppercase">Клієнт (Одержувач)</label>
-                                <select v-model="selectedClientId" @change="loadClient" class="w-full border-slate-200 border rounded-xl p-3 mt-1 text-sm font-bold bg-white">
-                                    <option value="">-- Новий / Вручну --</option>
-                                    <option v-for="c in clients" :key="c.id" :value="c.id">{{c.name}}</option>
-                                </select>
-                            </div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase">Клієнт (Одержувач)</label>
+                            <select v-model="selectedClientId" @change="loadClient" class="w-full border-slate-200 border rounded-xl p-3 text-sm font-bold bg-white">
+                                <option value="">-- Оберіть зі списку --</option>
+                                <option v-for="c in clients" :key="c.id" :value="c.id">{{c.name}}</option>
+                            </select>
                             <input v-model="invoice.client.name" placeholder="Назва або ПІБ *" class="w-full border-slate-200 border rounded-xl p-3 text-sm">
                             <textarea v-model="invoice.client.address" placeholder="Адреса доставки" class="w-full border-slate-200 border rounded-xl p-3 text-sm h-16"></textarea>
                             <input v-model="invoice.client.edrpou" placeholder="ЄДРПОУ / ІПН" class="w-full border-slate-200 border rounded-xl p-3 text-sm">
@@ -152,11 +135,24 @@
                             <input v-model="invoice.client.bankName" placeholder="Назва банку" class="w-full border-slate-200 border rounded-xl p-3 text-sm">
                         </div>
 
-                        <div class="mt-6 pt-6 border-t border-slate-100 text-right">
-                            <div class="text-[10px] font-black text-slate-400 uppercase mb-1">Разом до сплати</div>
-                            <div class="text-4xl font-black text-slate-800 tracking-tighter">{{ totalSum.toFixed(2) }} <span class="text-sm font-normal text-slate-400 uppercase">грн</span></div>
+                        <!-- СЕКЦІЯ ЗНИЖКИ ТА ПІДСУМКУ -->
+                        <div class="mt-6 pt-6 border-t border-slate-100 space-y-4">
+                            <div class="flex items-center justify-between bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                                <label class="text-[10px] font-bold text-blue-600 uppercase">Знижка (%)</label>
+                                <input type="number" v-model.number="invoice.discountPercent" min="0" max="100" class="w-16 text-right font-black text-blue-700 bg-white border border-blue-200 rounded-lg p-1.5 text-sm">
+                            </div>
+
+                            <div class="text-right">
+                                <div v-if="invoice.discountPercent > 0" class="text-xs text-slate-400 flex justify-between mb-1">
+                                    <span>До знижки:</span>
+                                    <span>{{ subtotal.toFixed(2) }} грн</span>
+                                </div>
+                                <div class="text-[10px] font-black text-slate-400 uppercase mb-1 tracking-widest">Разом до сплати</div>
+                                <div class="text-4xl font-black text-slate-800 tracking-tighter">{{ totalSum.toFixed(2) }} <span class="text-sm font-normal text-slate-400 uppercase">грн</span></div>
+                            </div>
+
                             <button @click="generatePDF" :disabled="!invoice.client.name || invoice.items.length === 0" 
-                                    class="w-full mt-6 bg-blue-600 disabled:bg-slate-200 text-white py-4 rounded-2xl font-black shadow-xl shadow-blue-100 active:scale-95 transition-all">
+                                    class="w-full mt-2 bg-blue-600 disabled:bg-slate-200 text-white py-4 rounded-2xl font-black shadow-xl shadow-blue-100 active:scale-95 transition-all text-lg">
                                 ЗГЕНЕРУВАТИ PDF
                             </button>
                         </div>
@@ -164,26 +160,21 @@
                 </div>
             </div>
 
-            <!-- ДРУГИЕ ТАБЫ (Без изменений логики, но с легким рестайлингом) -->
             <!-- ТАБ: ТОВАРИ -->
             <div v-if="tab === 'products'" class="bg-white p-4 md:p-8 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-bold">Лист позицій</h2>
-                    <button @click="openProductModal()" class="bg-blue-600 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-50">+ Додати</button>
+                    <button @click="openProductModal()" class="bg-blue-600 text-white px-5 py-2 rounded-xl text-sm font-bold">+ Додати</button>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div v-for="p in products" :key="p.id" class="p-4 border border-slate-100 rounded-xl flex justify-between items-center bg-white shadow-sm hover:border-blue-200">
-                        <div class="pr-4">
+                    <div v-for="p in products" :key="p.id" class="p-4 border border-slate-100 rounded-xl flex justify-between items-center bg-white shadow-sm hover:border-blue-200 transition-colors">
+                        <div>
                             <div class="font-bold text-slate-700 leading-tight">{{p.name}}</div>
-                            <div class="text-blue-600 font-black text-sm mt-1">{{p.price}} <span class="text-[10px] text-slate-400 font-normal uppercase">грн / {{p.unit}}</span></div>
+                            <div class="text-blue-600 font-black text-sm mt-1">{{p.price}} <span class="text-[10px] text-slate-400 font-normal">грн / {{p.unit}}</span></div>
                         </div>
-                        <div class="flex gap-1">
-                            <button @click="openProductModal(p)" class="p-2 text-slate-400 hover:text-blue-600">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                            </button>
-                            <button @click="removeProduct(p.id)" class="p-2 text-slate-300 hover:text-red-500">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>
+                        <div class="flex gap-1 shrink-0">
+                            <button @click="openProductModal(p)" class="p-2 text-slate-400 hover:text-blue-600">✎</button>
+                            <button @click="removeProduct(p.id)" class="p-2 text-slate-300 hover:text-red-500">🗑</button>
                         </div>
                     </div>
                 </div>
@@ -193,18 +184,14 @@
             <div v-if="tab === 'clients'" class="bg-white p-4 md:p-8 rounded-2xl shadow-sm border border-slate-200">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-bold">База клієнтів</h2>
-                    <button @click="openClientModal()" class="bg-blue-600 text-white px-5 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-50">+ Додати</button>
+                    <button @click="openClientModal()" class="bg-blue-600 text-white px-5 py-2 rounded-xl text-sm font-bold">+ Додати</button>
                 </div>
                 <div class="grid grid-cols-1 gap-3">
-                    <div v-for="c in clients" :key="c.id" class="p-4 border border-slate-100 rounded-xl flex flex-col md:flex-row justify-between md:items-center bg-white shadow-sm gap-4">
+                    <div v-for="c in clients" :key="c.id" class="p-4 border border-slate-100 rounded-xl flex flex-col md:flex-row justify-between md:items-center bg-white shadow-sm gap-4 transition-all">
                         <div class="flex-1">
                             <div class="font-black text-slate-800">{{c.name}}</div>
                             <div class="text-xs text-slate-500 mt-1 italic">{{c.address}}</div>
-                            <div class="mt-2 text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded inline-block uppercase">ЄДРПОУ: {{c.edrpou}}</div>
-                            <div class="mt-2 text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded inline-block uppercase">Номер телефону: {{c.phoneNumber}}</div>
-                            <div class="mt-2 text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded inline-block uppercase">Електронна пошта: {{c.email}}</div>
-                            <div class="mt-2 text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded inline-block uppercase">Банківські реквізити: {{c.iban}}</div>
-                            <div class="mt-2 text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded inline-block uppercase">Назва банку: {{c.bankName}}</div>
+                            <div v-if="c.edrpou" class="mt-2 text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded inline-block">ЄДРПОУ: {{c.edrpou}}</div>
                         </div>
                         <div class="flex gap-4 border-t md:border-t-0 pt-3 md:pt-0">
                             <button @click="openClientModal(c)" class="text-xs font-bold text-slate-400 hover:text-blue-600 uppercase tracking-widest">Редагувати</button>
@@ -217,29 +204,26 @@
             <!-- ТАБ: НАЛАШТУВАННЯ -->
             <div v-if="tab === 'settings'" class="max-w-xl mx-auto space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h2 class="text-lg font-bold mb-4">Ваші реквізити (Постачальник)</h2>
+                    <h2 class="text-lg font-bold mb-4 uppercase tracking-widest text-slate-400">Реквізити Постачальника</h2>
                     <div class="space-y-4">
-                        <input v-model="settings.vendorName" placeholder="ФОП Назва" class="w-full border-slate-200 border rounded-xl p-3 text-sm">
+                        <input v-model="settings.vendorName" placeholder="ФОП Назва" class="w-full border-slate-200 border rounded-xl p-3 text-sm font-bold">
                         <textarea v-model="settings.vendorAddress" placeholder="Юридична адреса" class="w-full border-slate-200 border rounded-xl p-3 text-sm h-20"></textarea>
                         <input v-model="settings.vendorEdrpou" placeholder="ЄДРПОУ" class="w-full border-slate-200 border rounded-xl p-3 text-sm">
                         <input v-model="settings.phoneNumber" placeholder="Номер телефону" class="w-full border-slate-200 border rounded-xl p-3 text-sm">
                         <input v-model="settings.email" placeholder="Електронна пошта" class="w-full border-slate-200 border rounded-xl p-3 text-sm">
-                        
-                         <!-- <div class="grid grid-cols-2 gap-3">
-                           <input v-model.number="settings.lastInvoiceNumber" placeholder="Останній №" class="border-slate-200 border rounded-xl p-3 text-sm font-bold text-blue-600"> 
-                        </div>-->
+                        <input v-model.number="settings.lastInvoiceNumber" placeholder="Останній №" class="w-full border-slate-200 border rounded-xl p-3 text-sm font-bold text-blue-600">
                         <input v-model="settings.vendorIban" placeholder="IBAN та банк" class="w-full border-slate-200 border rounded-xl p-3 text-sm">
-                        <button @click="saveData(true)" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold text-sm">Зберегти налаштування</button>
+                        <button @click="saveData(true)" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-sm shadow-xl active:scale-95 transition-all">Зберегти налаштування</button>
                     </div>
                 </div>
 
                 <div class="bg-slate-900 p-6 rounded-2xl text-white shadow-xl">
-                    <h3 class="font-bold mb-2">Хмарна копія (JSON)</h3>
-                    <p class="text-slate-400 text-[10px] mb-6 uppercase tracking-widest">Оновлено: {{ new Date(updatedAt).toLocaleString() }}</p>
+                    <h3 class="font-bold mb-2">Синхронізація (JSON)</h3>
+                    <p class="text-slate-400 text-[10px] mb-6 tracking-widest">Оновлено: {{ new Date(updatedAt).toLocaleString() }}</p>
                     <div class="grid grid-cols-2 gap-3">
-                        <button @click="exportJSON" class="bg-white/10 hover:bg-white/20 p-3 rounded-xl text-xs font-bold transition-all">Скачати файл</button>
-                        <label class="bg-blue-600 hover:bg-blue-500 p-3 rounded-xl text-xs font-bold cursor-pointer text-center">
-                            Імпортувати
+                        <button @click="exportJSON" class="bg-white/10 hover:bg-white/20 p-3 rounded-xl text-xs font-bold transition-all">Експорт</button>
+                        <label class="bg-blue-600 hover:bg-blue-500 p-3 rounded-xl text-xs font-bold cursor-pointer text-center transition-all">
+                            Імпорт
                             <input type="file" @change="importJSON" class="hidden" accept=".json">
                         </label>
                     </div>
@@ -247,32 +231,32 @@
             </div>
         </div>
 
-        <!-- МОДАЛКИ (Одинаковые для всех) -->
+        <!-- МОДАЛКИ -->
         <div v-if="modals.product || modals.client" class="fixed inset-0 z-50 modal-overlay flex items-end md:items-center justify-center p-0 md:p-4">
-            <div class="bg-white rounded-t-3xl md:rounded-3xl p-6 md:p-8 w-full max-w-md shadow-2xl animate-slide-up">
+            <div class="bg-white rounded-t-3xl md:rounded-3xl p-6 md:p-8 w-full max-w-md shadow-2xl">
                 <div v-if="modals.product">
                     <h3 class="text-lg font-bold mb-4">{{ currentItem.id ? 'Редагувати товар' : 'Новий товар' }}</h3>
-                    <input v-model="currentItem.name" placeholder="Найменування товару" class="w-full border p-3 rounded-xl mb-3 text-sm">
+                    <input v-model="currentItem.name" placeholder="Найменування товару" class="w-full border p-3 rounded-xl mb-3 text-sm font-bold">
                     <div class="grid grid-cols-2 gap-3 mb-6">
-                        <input v-model.number="currentItem.price" placeholder="Ціна" class="border p-3 rounded-xl text-sm">
+                        <input v-model.number="currentItem.price" placeholder="Ціна" class="border p-3 rounded-xl text-sm font-bold">
                         <input v-model="currentItem.unit" placeholder="Од. вим (шт)" class="border p-3 rounded-xl text-sm">
                     </div>
                     <div class="flex gap-3">
-                        <button @click="modals.product = false" class="flex-1 py-3 font-bold text-slate-400">Закрити</button>
+                        <button @click="modals.product = false" class="flex-1 py-3 font-bold text-slate-400">Скасувати</button>
                         <button @click="saveProduct" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">Зберегти</button>
                     </div>
                 </div>
                 <div v-if="modals.client">
                     <h3 class="text-lg font-bold mb-4">{{ currentItem.id ? 'Редагувати клієнта' : 'Новий клієнт' }}</h3>
                     <input v-model="currentItem.name" placeholder="Назва Одержувача" class="w-full border p-3 rounded-xl mb-3 text-sm font-bold">
-                    <textarea v-model="currentItem.address" placeholder="Адреса" class="w-full border p-3 rounded-xl mb-6 h-24 text-sm"></textarea>
+                    <textarea v-model="currentItem.address" placeholder="Адреса" class="w-full border p-3 rounded-xl mb-3 h-24 text-sm"></textarea>
                     <input v-model="currentItem.edrpou" placeholder="ЄДРПОУ" class="w-full border p-3 rounded-xl mb-3 text-sm">
                     <input v-model="currentItem.phoneNumber" placeholder="Номер телефону" class="w-full border p-3 rounded-xl mb-3 text-sm">
                     <input v-model="currentItem.email" placeholder="Електронна пошта" class="w-full border p-3 rounded-xl mb-3 text-sm">
-                    <input v-model="currentItem.iban" placeholder="Банківські реквізити" class="w-full border p-3 rounded-xl mb-3 text-sm">
-                    <input v-model="currentItem.bankName" placeholder="Назва банку" class="w-full border p-3 rounded-xl mb-3 text-sm">
+                    <input v-model="currentItem.iban" placeholder="IBAN / Реквізити" class="w-full border p-3 rounded-xl mb-3 text-sm">
+                    <input v-model="currentItem.bankName" placeholder="Назва банку" class="w-full border p-3 rounded-xl mb-6 text-sm">
                     <div class="flex gap-3">
-                        <button @click="modals.client = false" class="flex-1 py-3 font-bold text-slate-400">Закрити</button>
+                        <button @click="modals.client = false" class="flex-1 py-3 font-bold text-slate-400">Скасувати</button>
                         <button @click="saveClient" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">Зберегти</button>
                     </div>
                 </div>
@@ -307,21 +291,28 @@
                     invoice: {
                         number: 1,
                         date: new Date().toISOString().substr(0, 10),
-                        client: { name: '', address: '', edrpou: '', phoneNumber: '', email:'', iban:'',bankName:''   },
-                        items: []
+                        client: { name: '', address: '', edrpou: '', phoneNumber: '', email:'', iban:'', bankName:'' },
+                        items: [],
+                        discountPercent: 0
                     }
                 }
             },
             computed: {
-                totalSum() {
+                subtotal() {
                     return this.invoice.items.reduce((sum, item) => sum + (item.qty * item.price), 0);
+                },
+                discountAmount() {
+                    return this.subtotal * (this.invoice.discountPercent / 100);
+                },
+                totalSum() {
+                    return this.subtotal - this.discountAmount;
                 }
             },
             methods: {
                 saveData(showAlert = false) {
                     this.updatedAt = Date.now();
                     const db = { settings: this.settings, products: this.products, clients: this.clients, updatedAt: this.updatedAt };
-                    localStorage.setItem('invoice_pro_db_v3', JSON.stringify(db));
+                    localStorage.setItem('invoice_pro_db_v4', JSON.stringify(db));
                     if(showAlert) alert('Збережено!');
                 },
                 openProductModal(item = null) {
@@ -373,7 +364,12 @@
                 },
                 loadClient() {
                     const client = this.clients.find(c => c.id === this.selectedClientId);
-                    this.invoice.client = client ? { ...client } : {  name: '', address: '', edrpou: '', phoneNumber: '', email:'', iban:'',bankName:'' };
+                    this.invoice.client = client ? { ...client } : { name: '', address: '', edrpou: '', phoneNumber: '', email:'', iban:'', bankName:'' };
+                },
+                formatDateToUK(dateStr) {
+                    if (!dateStr) return '';
+                    const d = new Date(dateStr);
+                    return d.toLocaleDateString('uk-UA');
                 },
                 generatePDF() {
                     if (this.invoice.client.name && !this.selectedClientId) {
@@ -381,37 +377,57 @@
                         this.clients.push({ ...this.invoice.client, id: newId });
                         this.selectedClientId = newId;
                     }
+
+                    const formattedDate = this.formatDateToUK(this.invoice.date);
+
+                    const tableBody = [
+                        [{text:'№', style:'tH'}, {text:'Товар', style:'tH'}, {text:'К-сть', style:'tH'}, {text:'Од.', style:'tH'}, {text:'Ціна', style:'tH'}, {text:'Сума', style:'tH'}]
+                    ];
+
+                    this.invoice.items.forEach((it, i) => {
+                        tableBody.push([i+1, it.name, it.qty, it.unit || 'шт', it.price.toFixed(2), (it.qty * it.price).toFixed(2)]);
+                    });
+
+                    // Рядки з підсумками
+                    tableBody.push([{text: 'Всього по позиціях', colSpan: 5, alignment: 'right', bold: true}, {}, {}, {}, {}, {text: this.subtotal.toFixed(2), bold: true, alignment: 'right'}]);
+                    
+                    if (this.invoice.discountPercent > 0) {
+                        tableBody.push([{text: `Знижка (${this.invoice.discountPercent}%)`, colSpan: 5, alignment: 'right', color: '#dc2626'}, {}, {}, {}, {}, {text: `-${this.discountAmount.toFixed(2)}`, alignment: 'right', color: '#dc2626'}]);
+                    }
+
+                    tableBody.push([{text: 'РАЗОМ ДО СПЛАТИ', colSpan: 5, alignment: 'right', bold: true, fontSize: 11}, {}, {}, {}, {}, {text: this.totalSum.toFixed(2), bold: true, alignment: 'right', fontSize: 11}]);
+
                     const dd = {
                         content: [
-                            { text: `Видаткова накладна № ${this.invoice.number} від ${this.invoice.date}р.`, style: 'header', alignment: 'center', margin: [0,0,0,20] },
+                            { text: `Видаткова накладна № ${this.invoice.number} від ${formattedDate}р.`, style: 'header', alignment: 'center', margin: [0,0,0,20] },
                             { text: 'Постачальник:', bold: true, fontSize: 10 },
-                            { text: `${this.settings.vendorName}\nАдреса: ${this.settings.vendorAddress}\nЄДРПОУ: ${this.settings.vendorEdrpou}\nНомер телефону: ${this.settings.phoneNumber}\nЕлектронна пошта: ${this.settings.email}\nБанківські реквізити: ${this.settings.vendorIban}\n\n`, fontSize: 9 },
+                            { text: `${this.settings.vendorName}\nАдреса: ${this.settings.vendorAddress}\nЄДРПОУ: ${this.settings.vendorEdrpou}\nТел: ${this.settings.phoneNumber}\nEmail: ${this.settings.email}\nIBAN: ${this.settings.vendorIban}\n\n`, fontSize: 9 },
                             { text: 'Одержувач:', bold: true, fontSize: 10 },
-                            { text: `${this.invoice.client.name}\nАдреса: ${this.invoice.client.address}\nЄДРПОУ: ${this.invoice.client.edrpou}\nНомер телефону: ${this.invoice.client.phoneNumber}\nЕлектронна пошта: ${this.invoice.client.email}\nБанківські реквізити: ${this.invoice.client.iban}\nНазва банку: ${this.invoice.client.bankName}\n\n`, fontSize: 9 },
+                            { text: `${this.invoice.client.name}\nАдреса: ${this.invoice.client.address}\nЄДРПОУ: ${this.invoice.client.edrpou}\nТел: ${this.invoice.client.phoneNumber}\nIBAN: ${this.invoice.client.iban}\nБанк: ${this.invoice.client.bankName}\n\n`, fontSize: 9 },
                             {
                                 table: {
                                     headerRows: 1,
-                                    widths: [20, '*', 35, 35, 60, 65],
-                                    body: [
-                                        [{text:'№', style:'tH'}, {text:'Товар', style:'tH'}, {text:'К-сть', style:'tH'}, {text:'Од.', style:'tH'}, {text:'Ціна', style:'tH'}, {text:'Сума', style:'tH'}],
-                                        ...this.invoice.items.map((it, i) => [i+1, it.name, it.qty, it.unit || 'шт', it.price.toFixed(2), (it.qty * it.price).toFixed(2)]),
-                                        [{text: 'Всього без ПДВ', colSpan: 5, alignment: 'right', bold: true}, {}, {}, {}, {}, {text: this.totalSum.toFixed(2), bold: true, alignment: 'right'}]
-                                    ]
+                                    widths: [20, '*', 35, 30, 55, 65],
+                                    body: tableBody
                                 }
                             },
-                            { text: `\nВсього найменувань ${this.invoice.items.length} на суму ${this.totalSum.toFixed(2)} грн.`, margin: [0, 10, 0, 40] },
-                            { columns: [{text: `Відпустив: ${this.settings.vendorName}`, fontSize: 10}, {text: `Отримав: ${this.invoice.client.name}`, alignment: 'right', fontSize: 10}] }
+                            { text: `\nВсього найменувань ${this.invoice.items.length} на суму ${this.totalSum.toFixed(2)} грн.`, margin: [0, 10, 0, 40], fontSize: 9 },
+                            { columns: [{text: `Постачальник: ${this.settings.vendorName}`, fontSize: 10}, {text: `Одержувач: ${this.invoice.client.name}`, alignment: 'right', fontSize: 10}] }
                         ],
                         styles: { header: { fontSize: 16, bold: true }, tH: { bold: true, fillColor: '#f3f4f6', fontSize: 9 } },
                         defaultStyle: { fontSize: 9 }
                     };
-                    pdfMake.createPdf(dd).download(`Накладна_${this.invoice.number}.pdf`);
+
+                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                    const pdf = pdfMake.createPdf(dd);
+                    if (isIOS) pdf.open(); else pdf.download(`Накладна_${this.invoice.number}.pdf`);
+
                     this.settings.lastInvoiceNumber = this.invoice.number;
                     this.saveData();
                     this.invoice.number++;
                 },
                 exportJSON() {
-                    const blob = new Blob([localStorage.getItem('invoice_pro_db_v3')], { type: 'application/json' });
+                    const blob = new Blob([localStorage.getItem('invoice_pro_db_v4')], { type: 'application/json' });
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(blob);
                     a.download = `backup_v${this.updatedAt}.json`;
@@ -433,7 +449,7 @@
                 }
             },
             mounted() {
-                const data = localStorage.getItem('invoice_pro_db_v3');
+                const data = localStorage.getItem('invoice_pro_db_v4');
                 if (data) {
                     const db = JSON.parse(data);
                     this.products = db.products || [];
